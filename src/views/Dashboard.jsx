@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, LayoutGrid, ListTodo, AlertTriangle, LogOut, ExternalLink, Users, Copy, Check, ChevronDown } from 'lucide-react';
+import { Plus, LayoutGrid, ListTodo, AlertTriangle, LogOut, ExternalLink, Users, Copy, Check, ChevronDown, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TaskCard from '../components/TaskCard';
 import TaskCreator from '../components/TaskCreator';
@@ -36,6 +36,18 @@ export default function Dashboard() {
         navigator.clipboard.writeText(userData.groupId);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const exportTasksToJson = () => {
+        const dataStr = JSON.stringify(tasks, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
+        const exportFileDefaultName = `tasks_export_${new Date().getTime()}.json`;
+
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
     };
 
     return (
@@ -111,6 +123,14 @@ export default function Dashboard() {
                                 )}
                             </AnimatePresence>
                         </div>
+                        <button
+                            onClick={exportTasksToJson}
+                            style={styles.headerBtn}
+                            className="glass"
+                            title="Export Tasks as JSON"
+                        >
+                            <Download size={20} />
+                        </button>
                         <button onClick={logout} style={styles.headerBtn} className="glass">
                             <LogOut size={20} />
                         </button>

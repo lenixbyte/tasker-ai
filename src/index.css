@@ -5,7 +5,7 @@
   --primary-l: 56%;
   --primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
   --primary-hover: hsl(var(--primary-h), var(--primary-s), calc(var(--primary-l) - 5%));
-  
+
   --secondary-h: 260;
   --secondary-s: 80%;
   --secondary-l: 65%;
@@ -20,17 +20,17 @@
   --success: hsl(150, 80%, 40%);
   --warning: hsl(45, 90%, 50%);
   --danger: hsl(0, 85%, 60%);
-  
+
   /* Backgrounds */
   --bg-dark: hsl(220, 20%, 5%);
   --bg-card: hsla(220, 20%, 10%, 0.7);
   --glass: hsla(0, 0%, 100%, 0.05);
   --glass-border: hsla(0, 0%, 100%, 0.1);
-  
+
   /* Text */
   --text-main: hsl(0, 0%, 95%);
   --text-muted: hsl(220, 10%, 70%);
-  
+
   /* Spacing & Radii */
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -41,7 +41,7 @@
 
   /* Shadows */
   --shadow-lg: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-  
+
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -90,8 +90,15 @@ button {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {

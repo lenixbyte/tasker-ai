@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     CheckCircle, Circle, AlertCircle, Clock, Tag, Zap,
     AlertTriangle, Info, X, Briefcase, Heart, Home,
-    Coffee, GraduationCap, ChevronRight, User
+    Coffee, GraduationCap, ChevronRight, User, Edit2, MessageSquare, Send, Image as ImageIcon
 } from 'lucide-react';
+import TaskCreator from './TaskCreator';
+
 
 const priorityColors = {
     0: '#ef4444', // High - Red
@@ -27,6 +29,13 @@ const labelIcons = {
     'Learning': GraduationCap,
 };
 
+const statusOptions = [
+    { value: 'backlog', label: 'Backlog' },
+    { value: 'in-progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'overspill', label: 'Overspill' }
+];
+
 const PriorityIcon = ({ priority, size = 14 }) => {
     if (priority === 0) return <Zap size={size} />;
     if (priority === 1) return <AlertTriangle size={size} />;
@@ -35,6 +44,8 @@ const PriorityIcon = ({ priority, size = 14 }) => {
 
 export default function TaskCard({ task, onUpdate }) {
     const [showFullDesc, setShowFullDesc] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [commentText, setCommentText] = useState('');
     const isCompleted = task.status === 'completed';
     const isOverspill = task.status === 'overspill';
 
@@ -44,6 +55,29 @@ export default function TaskCard({ task, onUpdate }) {
             status: isCompleted ? 'in-progress' : 'completed',
             dateCompleted: isCompleted ? null : new Date().toISOString()
         });
+    };
+
+    const handleStatusChange = (e) => {
+        onUpdate(task.id, { status: e.target.value });
+    };
+
+    const handleAddComment = (e) => {
+        e.preventDefault();
+        if (!commentText.trim()) return;
+
+        const newComment = {
+            id: Date.now().toString(),
+            text: commentText,
+            userId: task.createdBy, // In a real app, use current user's ID
+            userName: 'You', // Placeholder
+            createdAt: new Date().toISOString()
+        };
+
+        const existingComments = task.comments || [];
+        onUpdate(task.id, {
+            comments: [...existingComments, newComment]
+        });
+        setCommentText('');
     };
 
     const getLabelIcon = (label) => {
@@ -92,6 +126,11 @@ export default function TaskCard({ task, onUpdate }) {
                     }}>
                         {task.title}
                     </h3>
+                    {task.image && (
+                        <div style={styles.cardImageContainer}>
+                            <img src={task.image} alt="Task" style={styles.cardImage} />
+                        </div>
+                    )}
                     {task.description && (
                         <p style={styles.desc}>
                             {task.description}
@@ -145,18 +184,51 @@ export default function TaskCard({ task, onUpdate }) {
                                     <PriorityIcon priority={task.priority} />
                                     <span>{priorityLabels[task.priority]} Priority</span>
                                 </div>
-                                <button onClick={() => setShowFullDesc(false)} style={styles.closeBtn}>
-                                    <X size={20} />
-                                </button>
+                                <div style={styles.modalHeaderActions}>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowEditModal(true);
+                                        }}
+                                        style={styles.editBtn}
+                                        title="Edit Task"
+                                    >
+                                        <Edit2 size={18} />
+                                    </button>
+                                    <button onClick={() => setShowFullDesc(false)} style={styles.closeBtn}>
+                                        <X size={20} />
+                                    </button>
+                                </div>
                             </div>
 
                             <h2 style={styles.modalTitle}>{task.title}</h2>
 
                             <div style={styles.modalBody}>
-                                <label style={styles.modalLabel}>Description</label>
-                                <p style={styles.modalDesc}>
-                                    {task.description || "No description provided."}
-                                </p>
+                                {task.image && (
+                                    <div style={styles.modalImageContainer}>
+                                        <img src={task.image} alt="Task Large" style={styles.modalImage} />
+                                    </div>
+                                )}
+
+                                <div style={styles.modalField}>
+                                    <label style={styles.modalLabel}>Status</label>
+                                    <select
+                                        value={task.status}
+                                        onChange={handleStatusChange}
+                                        style={styles.modalSelect}
+                                    >
+                                        {statusOptions.map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div style={styles.modalField}>
+                                    <label style={styles.modalLabel}>Description</label>
+                                    <p style={styles.modalDesc}>
+                                        {task.description || "No description provided."}
+                                    </p>
+                                </div>
 
                                 <label style={styles.modalLabel}>Labels</label>
                                 <div style={styles.modalLabelList}>
@@ -199,6 +271,39 @@ export default function TaskCard({ task, onUpdate }) {
                                         </div>
                                     )}
                                 </div>
+
+                                <div style={styles.commentsSection}>
+                                    <label style={styles.modalLabel}>Comments</label>
+                                    <div style={styles.commentsList}>
+                                        {task.comments && task.comments.length > 0 ? (
+                                            task.comments.map(comment => (
+                                                <div key={comment.id} style={styles.commentItem}>
+                                                    <div style={styles.commentHeader}>
+                                                        <span style={styles.commentAuthor}>{comment.userName}</span>
+                                                        <span style={styles.commentDate}>
+                                                            {new Date(comment.createdAt).toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+                                                    <p style={styles.commentText}>{comment.text}</p>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p style={styles.noComments}>No comments yet.</p>
+                                        )}
+                                    </div>
+                                    <form onSubmit={handleAddComment} style={styles.commentInputGroup}>
+                                        <input
+                                            type="text"
+                                            placeholder="Add a comment..."
+                                            value={commentText}
+                                            onChange={(e) => setCommentText(e.target.value)}
+                                            style={styles.commentInput}
+                                        />
+                                        <button type="submit" style={styles.commentSendBtn}>
+                                            <Send size={16} />
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
 
                             <button
@@ -214,6 +319,12 @@ export default function TaskCard({ task, onUpdate }) {
                     </div>
                 )}
             </AnimatePresence>
+
+            <TaskCreator
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                task={task}
+            />
         </>
     );
 }
@@ -457,5 +568,136 @@ const styles = {
     assigneeRole: {
         fontSize: '0.75rem',
         color: 'var(--text-muted)',
+    },
+    cardImageContainer: {
+        width: '100%',
+        height: '140px',
+        borderRadius: 'var(--radius-sm)',
+        overflow: 'hidden',
+        marginTop: '0.5rem',
+        marginBottom: '0.5rem',
+        border: '1px solid var(--glass-border)',
+    },
+    cardImage: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+    },
+    modalHeaderActions: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.8rem',
+    },
+    editBtn: {
+        background: 'none',
+        border: 'none',
+        color: 'var(--text-muted)',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '4px',
+        transition: 'color 0.2s ease',
+    },
+    modalImageContainer: {
+        width: '100%',
+        maxHeight: '300px',
+        borderRadius: 'var(--radius-md)',
+        overflow: 'hidden',
+        border: '1px solid var(--glass-border)',
+    },
+    modalImage: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain',
+        background: 'rgba(0,0,0,0.2)',
+    },
+    modalField: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.6rem',
+    },
+    modalSelect: {
+        padding: '0.6rem 0.8rem',
+        borderRadius: 'var(--radius-sm)',
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid var(--glass-border)',
+        color: 'var(--text-main)',
+        fontSize: '0.9rem',
+        outline: 'none',
+    },
+    commentsSection: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem',
+        marginTop: '1rem',
+        paddingTop: '1.5rem',
+        borderTop: '1px solid var(--glass-border)',
+    },
+    commentsList: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.8rem',
+        maxHeight: '200px',
+        overflowY: 'auto',
+        paddingRight: '0.5rem',
+    },
+    commentItem: {
+        background: 'rgba(255,255,255,0.03)',
+        padding: '0.8rem',
+        borderRadius: 'var(--radius-sm)',
+        border: '1px solid rgba(255,255,255,0.05)',
+    },
+    commentHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginBottom: '0.4rem',
+    },
+    commentAuthor: {
+        fontSize: '0.8rem',
+        fontWeight: '700',
+        color: 'var(--primary)',
+    },
+    commentDate: {
+        fontSize: '0.7rem',
+        color: 'var(--text-muted)',
+    },
+    commentText: {
+        fontSize: '0.9rem',
+        color: 'var(--text-main)',
+        lineHeight: '1.4',
+    },
+    noComments: {
+        fontSize: '0.85rem',
+        color: 'var(--text-muted)',
+        textAlign: 'center',
+        fontStyle: 'italic',
+    },
+    commentInputGroup: {
+        display: 'flex',
+        gap: '0.5rem',
+        marginTop: '0.5rem',
+    },
+    commentInput: {
+        flex: 1,
+        padding: '0.6rem 0.8rem',
+        borderRadius: 'var(--radius-sm)',
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid var(--glass-border)',
+        color: 'var(--text-main)',
+        fontSize: '0.9rem',
+        outline: 'none',
+    },
+    commentSendBtn: {
+        padding: '0.6rem',
+        borderRadius: 'var(--radius-sm)',
+        background: 'var(--primary)',
+        color: 'white',
+        border: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
     }
 };
+

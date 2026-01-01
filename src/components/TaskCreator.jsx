@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Tag as TagIcon, ChevronDown, Briefcase, Home, GraduationCap, Heart, Zap, Coffee } from 'lucide-react';
+import { X, Plus, Tag as TagIcon, ChevronDown, Briefcase, Home, GraduationCap, Heart, Zap, Coffee, Image as ImageIcon, Check } from 'lucide-react';
 import { useTasks } from '../contexts/TaskContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useEffect } from 'react';
@@ -14,15 +14,16 @@ const PREDEFINED_LABELS = [
     { name: 'Learning', icon: GraduationCap, color: '#8b5cf6' },
 ];
 
-export default function TaskCreator({ isOpen, onClose }) {
+export default function TaskCreator({ isOpen, onClose, task = null }) {
     const { userData } = useAuth();
-    const { createTask, bulkCreateTasks, fetchGroupMembers } = useTasks();
+    const { createTask, updateTask, bulkCreateTasks, fetchGroupMembers } = useTasks();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState(1);
     const [selectedLabels, setSelectedLabels] = useState([]);
     const [customLabel, setCustomLabel] = useState('');
     const [assignee, setAssignee] = useState(null);
+    const [image, setImage] = useState(null);
     const [groupMembers, setGroupMembers] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -30,7 +31,35 @@ export default function TaskCreator({ isOpen, onClose }) {
         if (isOpen && userData?.groupId) {
             fetchGroupMembers(userData.groupId).then(setGroupMembers);
         }
-    }, [isOpen, userData?.groupId]);
+
+        if (isOpen && task) {
+            setTitle(task.title || '');
+            setDescription(task.description || '');
+            setPriority(task.priority || 1);
+            setSelectedLabels(task.labels || []);
+            setAssignee(task.assignedTo || null);
+            setImage(task.image || null);
+        } else if (isOpen) {
+            resetForm();
+        }
+    }, [isOpen, userData?.groupId, task]);
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Limit size (approx 2MB for base64)
+        if (file.size > 2 * 1024 * 1024) {
+            alert("Image too large. Please select an image under 2MB.");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImage(reader.result);
+        };
+        reader.readAsDataURL(file);
+    };
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -41,13 +70,21 @@ export default function TaskCreator({ isOpen, onClose }) {
             const finalLabels = [...selectedLabels];
             if (customLabel.trim()) finalLabels.push(customLabel.trim());
 
-            await createTask({
+            const taskData = {
                 title,
                 description,
                 priority: parseInt(priority),
                 labels: finalLabels,
-                assignedTo: assignee
-            });
+                assignedTo: assignee,
+                image
+            };
+
+            if (task) {
+                await updateTask(task.id, taskData);
+            } else {
+                await createTask(taskData);
+            }
+
             resetForm();
             onClose();
         } catch (err) {
@@ -64,6 +101,7 @@ export default function TaskCreator({ isOpen, onClose }) {
         setSelectedLabels([]);
         setCustomLabel('');
         setAssignee(null);
+        setImage(null);
     };
 
     const toggleLabel = (labelName) => {
@@ -82,11 +120,11 @@ export default function TaskCreator({ isOpen, onClose }) {
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="glass"
+                        className="glass task-creator-modal"
                         style={styles.modal}
                     >
                         <div style={styles.header}>
-                            <h2>Create New Task</h2>
+                            <h2>{task ? 'Edit Task' : 'Create New Task'}</h2>
                             <button onClick={onClose} style={styles.closeBtn}><X size={24} /></button>
                         </div>
 
@@ -105,7 +143,7 @@ export default function TaskCreator({ isOpen, onClose }) {
 
                             <div style={styles.inputGroup}>
                                 <label style={styles.label}>Priority</label>
-                                <div style={styles.priorityGrid}>
+                                <div style={styles.priorityGrid} className="priority-grid">
                                     {[0, 1, 2].map((p) => (
                                         <button
                                             key={p}
@@ -189,6 +227,33 @@ export default function TaskCreator({ isOpen, onClose }) {
                             </div>
 
                             <div style={styles.inputGroup}>
+                                <label style={styles.label}>Task Image</label>
+                                {image ? (
+                                    <div style={styles.imagePreviewContainer}>
+                                        <img src={image} alt="Preview" style={styles.imagePreview} />
+                                        <button
+                                            type="button"
+                                            onClick={() => setImage(null)}
+                                            style={styles.removeImageBtn}
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <label style={styles.imageUploadLabel}>
+                                        <ImageIcon size={20} />
+                                        <span>Add an image (Max 2MB)</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageChange}
+                                            style={{ display: 'none' }}
+                                        />
+                                    </label>
+                                )}
+                            </div>
+
+                            <div style={styles.inputGroup}>
                                 <label style={styles.label}>Description (Optional)</label>
                                 <textarea
                                     style={{ ...styles.input, minHeight: '60px', resize: 'none' }}
@@ -231,8 +296,8 @@ export default function TaskCreator({ isOpen, onClose }) {
                             </div>
 
                             <button type="submit" disabled={loading} style={styles.submitBtn}>
-                                <Plus size={20} />
-                                <span>{loading ? 'Adding...' : 'Create Task'}</span>
+                                {task ? <Check size={20} /> : <Plus size={20} />}
+                                <span>{loading ? (task ? 'Saving...' : 'Adding...') : (task ? 'Save Changes' : 'Create Task')}</span>
                             </button>
                         </form>
                     </motion.div>
@@ -363,5 +428,45 @@ const styles = {
     },
     closeBtn: {
         color: 'var(--text-muted)',
+    },
+    imagePreviewContainer: {
+        position: 'relative',
+        width: '100%',
+        height: '200px',
+        borderRadius: 'var(--radius-md)',
+        overflow: 'hidden',
+        border: '1px solid var(--glass-border)',
+    },
+    imagePreview: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+    },
+    removeImageBtn: {
+        position: 'absolute',
+        top: '0.5rem',
+        right: '0.5rem',
+        background: 'rgba(0,0,0,0.6)',
+        color: 'white',
+        padding: '0.4rem',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    imageUploadLabel: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '0.8rem',
+        padding: '2rem',
+        borderRadius: 'var(--radius-md)',
+        border: '1px dashed var(--glass-border)',
+        background: 'rgba(255,255,255,0.02)',
+        color: 'var(--text-muted)',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        fontSize: '0.9rem',
     }
 };
