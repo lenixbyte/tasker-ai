@@ -1,0 +1,45 @@
+[
+    {
+        "title": "Complete Project Documentation",
+        "description": "Write the README and implementation plan details.",
+        "priority": 0,
+        "labels": [
+            "Work",
+            "Urgent"
+        ]
+    },
+    {
+        "title": "Weekly Grocery Shopping",
+        "description": "Buy milk, eggs, bread, and fruits.",
+        "priority": 2,
+        "labels": [
+            "Home",
+            "Personal"
+        ]
+    },
+    {
+        "title": "Deep Dive into Gemini API",
+        "description": "Research multimodal capabilities and function calling.",
+        "priority": 1,
+        "labels": [
+            "Learning"
+        ]
+    },
+    {
+        "title": "Fix Navbar Distortion",
+        "description": "Check CSS flexbox properties on mobile breakpoints.",
+        "priority": 0,
+        "labels": [
+            "Work"
+        ]
+    },
+    {
+        "title": "Evening Walk",
+        "description": "30 minutes at the park.",
+        "priority": 2,
+        "labels": [
+            "Personal",
+            "Leisure"
+        ]
+    }
+]

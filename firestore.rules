@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User profile rules
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Group rules
+    match /groups/{groupId} {
+      allow create: if request.auth != null;
+      allow read, update: if request.auth != null && request.auth.uid in resource.data.members;
+    }
+    
+    // Task rules
+    match /tasks/{taskId} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == request.resource.data.groupId;
+      
+      // Allow read/update for existing tasks in group
+      allow read, update, delete: if request.auth != null &&
+        resource.data.groupId != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == resource.data.groupId;
+    }
+  }
+}

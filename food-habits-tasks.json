@@ -1,0 +1,56 @@
+[
+    {
+        "title": "Morning Hydration",
+        "description": "Drink at least 500ml of water immediately after waking up to kickstart metabolism.",
+        "priority": 0,
+        "labels": [
+            "Health",
+            "Daily Routine"
+        ]
+    },
+    {
+        "title": "Healthy Breakfast",
+        "description": "Eat a protein-rich breakfast like eggs or Greek yogurt with berries.",
+        "priority": 1,
+        "labels": [
+            "Nutrition",
+            "Health"
+        ]
+    },
+    {
+        "title": "Meal Tracking",
+        "description": "Log all meals and snacks in a food tracking app to monitor caloric intake.",
+        "priority": 1,
+        "labels": [
+            "Tracking",
+            "Wellness"
+        ]
+    },
+    {
+        "title": "Afternoon Fruit Snack",
+        "description": "Replace processed sugary snacks with an apple or a handful of nuts.",
+        "priority": 2,
+        "labels": [
+            "Nutrition",
+            "Habits"
+        ]
+    },
+    {
+        "title": "Limit Evening Caffeine",
+        "description": "Avoid coffee or tea after 4:00 PM to ensure better sleep quality.",
+        "priority": 0,
+        "labels": [
+            "Health",
+            "Sleep"
+        ]
+    },
+    {
+        "title": "Daily Vegetable Goal",
+        "description": "Incorporate at least two servings of green vegetables into lunch and dinner.",
+        "priority": 1,
+        "labels": [
+            "Nutrition",
+            "Daily"
+        ]
+    }
+]
