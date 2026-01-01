@@ -4,25 +4,42 @@ service cloud.firestore {
     
     // User profile rules
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && (
+        request.auth.uid == userId || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('groupId', '') == resource.data.get('groupId', 'null'))
+      );
     }
     
     // Group rules
     match /groups/{groupId} {
       allow create: if request.auth != null;
-      allow read, update: if request.auth != null && request.auth.uid in resource.data.members;
+      allow read: if request.auth != null;
+      allow update: if request.auth != null && (
+        request.auth.uid in resource.data.members || 
+        request.auth.uid in request.resource.data.members
+      );
     }
     
     // Task rules
     match /tasks/{taskId} {
-      allow read, write: if request.auth != null && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == request.resource.data.groupId;
+      function getUserData() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      }
       
-      // Allow read/update for existing tasks in group
-      allow read, update, delete: if request.auth != null &&
-        resource.data.groupId != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId == resource.data.groupId;
+      function isMember(groupId) {
+        let userData = getUserData();
+        return groupId != null && (
+          (userData.joinedGroups != null && groupId in userData.joinedGroups) || 
+          userData.groupId == groupId
+        );
+      }
+
+      allow read, write: if request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && isMember(request.resource.data.groupId);
+      
+      // Allow read/update for existing tasks if user is in that group
+      allow read, update, delete: if request.auth != null && isMember(resource.data.groupId);
     }
   }
 }

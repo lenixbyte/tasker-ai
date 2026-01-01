@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     CheckCircle, Circle, AlertCircle, Clock, Tag, Zap,
     AlertTriangle, Info, X, Briefcase, Heart, Home,
-    Coffee, GraduationCap, ChevronRight
+    Coffee, GraduationCap, ChevronRight, User
 } from 'lucide-react';
 
 const priorityColors = {
@@ -111,6 +111,17 @@ export default function TaskCard({ task, onUpdate }) {
                             <span style={styles.moreLabels}>+{task.labels.length - 2}</span>
                         )}
                     </div>
+                    {task.assignedTo && (
+                        <div style={styles.assigneeMini} title={`Assigned to ${task.assignedTo.displayName}`}>
+                            {task.assignedTo.photoURL ? (
+                                <img src={task.assignedTo.photoURL} alt={task.assignedTo.displayName} style={styles.assigneeAvatarMini} />
+                            ) : (
+                                <div style={styles.assigneeInitialMini}>
+                                    {task.assignedTo.displayName?.charAt(0)}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </motion.div>
 
@@ -156,6 +167,25 @@ export default function TaskCard({ task, onUpdate }) {
                                         </div>
                                     ))}
                                 </div>
+
+                                {task.assignedTo && (
+                                    <div style={styles.modalAssignee}>
+                                        <label style={styles.modalLabel}>Assignee</label>
+                                        <div style={styles.assigneeProfile}>
+                                            {task.assignedTo.photoURL ? (
+                                                <img src={task.assignedTo.photoURL} alt={task.assignedTo.displayName} style={styles.assigneeAvatarLarge} />
+                                            ) : (
+                                                <div style={styles.assigneeInitialLarge}>
+                                                    {task.assignedTo.displayName?.charAt(0)}
+                                                </div>
+                                            )}
+                                            <div style={styles.assigneeDetails}>
+                                                <p style={styles.assigneeName}>{task.assignedTo.displayName}</p>
+                                                <p style={styles.assigneeRole}>Group Member</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div style={styles.modalMeta}>
                                     <div style={styles.metaItem}>
@@ -362,5 +392,70 @@ const styles = {
         border: 'none',
         cursor: 'pointer',
         boxShadow: '0 8px 16px -4px rgba(0,0,0,0.3)',
+    },
+    assigneeMini: {
+        display: 'flex',
+        alignItems: 'center',
+    },
+    assigneeAvatarMini: {
+        width: '24px',
+        height: '24px',
+        borderRadius: '50%',
+        border: '1px solid var(--glass-border)',
+    },
+    assigneeInitialMini: {
+        width: '24px',
+        height: '24px',
+        borderRadius: '50%',
+        background: 'var(--primary)',
+        color: 'white',
+        fontSize: '0.6rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 'bold',
+    },
+    modalAssignee: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.8rem',
+    },
+    assigneeProfile: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1rem',
+        padding: '1rem',
+        background: 'rgba(255, 255, 255, 0.03)',
+        borderRadius: 'var(--radius-md)',
+    },
+    assigneeAvatarLarge: {
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+    },
+    assigneeInitialLarge: {
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+        background: 'var(--primary)',
+        color: 'white',
+        fontSize: '1rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 'bold',
+    },
+    assigneeDetails: {
+        display: 'flex',
+        flexDirection: 'column',
+    },
+    assigneeName: {
+        fontSize: '1rem',
+        fontWeight: '700',
+        color: 'var(--text-main)',
+    },
+    assigneeRole: {
+        fontSize: '0.75rem',
+        color: 'var(--text-muted)',
     }
 };

@@ -10,7 +10,9 @@ import {
     doc,
     deleteDoc,
     orderBy,
-    writeBatch
+    writeBatch,
+    getDocs,
+    getDoc
 } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 
@@ -56,9 +58,36 @@ export function TaskProvider({ children }) {
             ...taskData,
             groupId: userData.groupId,
             createdBy: userData.uid,
-            status: 'backlog',
+            status: taskData.status || 'backlog',
+            assignedTo: taskData.assignedTo || null, // Can be null or { uid, displayName, photoURL }
             createdAt: new Date()
         });
+    }
+
+    async function fetchGroupMembers(groupId) {
+        if (!groupId) return [];
+        try {
+            const groupRef = doc(db, 'groups', groupId);
+            const groupSnap = await getDoc(groupRef);
+
+            if (!groupSnap.exists()) return [];
+
+            const memberIds = groupSnap.data().members || [];
+            if (memberIds.length === 0) return [];
+
+            // Fetch profiles for all members
+            const membersData = await Promise.all(
+                memberIds.map(async (uid) => {
+                    const userSnap = await getDoc(doc(db, 'users', uid));
+                    return userSnap.exists() ? userSnap.data() : { uid, displayName: 'Unknown User' };
+                })
+            );
+
+            return membersData;
+        } catch (err) {
+            console.error("Error fetching group members:", err);
+            return [];
+        }
     }
 
     async function updateTask(taskId, updates) {
@@ -77,6 +106,7 @@ export function TaskProvider({ children }) {
                 createdBy: userData.uid,
                 status: task.status || 'backlog',
                 priority: task.priority !== undefined ? parseInt(task.priority) : 1,
+                assignedTo: task.assignedTo || null,
                 createdAt: new Date()
             });
         });
@@ -94,7 +124,8 @@ export function TaskProvider({ children }) {
         createTask,
         updateTask,
         bulkCreateTasks,
-        deleteTask
+        deleteTask,
+        fetchGroupMembers
     };
 
     return (

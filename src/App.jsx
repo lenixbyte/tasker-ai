@@ -9,10 +9,10 @@ import { runDailyAutomation } from './utils/taskAutomation';
 import Dashboard from './views/Dashboard';
 import AllTasks from './views/AllTasks';
 
-const PrivateRoute = ({ children }) => {
+const PrivateRoute = ({ children, skipGroupCheck = false }) => {
   const { currentUser, userData } = useAuth();
   if (!currentUser) return <Navigate to="/auth" />;
-  if (!userData?.groupId) return <GroupSetup />;
+  if (!skipGroupCheck && !userData?.groupId) return <GroupSetup />;
   return children;
 };
 
@@ -28,6 +28,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/groups"
+              element={
+                <PrivateRoute skipGroupCheck>
+                  <GroupSetup />
                 </PrivateRoute>
               }
             />

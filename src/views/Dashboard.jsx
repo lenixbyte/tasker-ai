@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, LayoutGrid, ListTodo, AlertTriangle, LogOut, ExternalLink, Users, Copy, Check } from 'lucide-react';
+import { Plus, LayoutGrid, ListTodo, AlertTriangle, LogOut, ExternalLink, Users, Copy, Check, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TaskCard from '../components/TaskCard';
 import TaskCreator from '../components/TaskCreator';
@@ -10,7 +10,7 @@ import { runDailyAutomation } from '../utils/taskAutomation';
 import { useEffect } from 'react';
 
 export default function Dashboard() {
-    const { logout, userData, currentUser } = useAuth();
+    const { logout, userData, currentUser, switchGroup } = useAuth();
     const { tasks, updateTask } = useTasks();
     const navigate = useNavigate();
 
@@ -42,47 +42,101 @@ export default function Dashboard() {
         <div style={styles.container}>
             <header style={styles.header}>
                 <div style={styles.headerTop}>
-                    <div style={styles.brand}>
-                        <h1 style={styles.logo}>Tasker</h1>
-                        <p style={styles.userName}>Hey, {userData?.displayName?.split(' ')[0]} 👋</p>
-                    </div>
+                    <h1 style={styles.logo}>Tasker</h1>
                     <div style={styles.headerActions}>
-                        <button
-                            onClick={() => setShowGroupInfo(!showGroupInfo)}
-                            className="glass"
-                            style={styles.headerBtn}
-                        >
-                            <Users size={20} />
-                        </button>
+                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                            <button
+                                onClick={() => setShowGroupInfo(!showGroupInfo)}
+                                className="glass"
+                                style={styles.headerBtn}
+                            >
+                                <Users size={20} />
+                            </button>
+
+                            <AnimatePresence>
+                                {showGroupInfo && (
+                                    <>
+                                        {/* Invisible backdrop to close on click outside */}
+                                        <div
+                                            style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+                                            onClick={() => setShowGroupInfo(false)}
+                                        />
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                            className="glass"
+                                            style={styles.groupCard}
+                                        >
+                                            <div style={styles.groupInfoTitle}>
+                                                <Users size={16} color="var(--primary)" />
+                                                <span>Group Management</span>
+                                            </div>
+
+                                            <div style={{ marginBottom: '0.4rem' }}>
+                                                <p style={styles.groupHint}>Switch Active Group</p>
+                                                <select
+                                                    style={styles.groupSwitcher}
+                                                    value={userData?.groupId || ''}
+                                                    onChange={(e) => switchGroup(e.target.value)}
+                                                >
+                                                    {userData?.joinedGroups?.map(gid => (
+                                                        <option key={gid} value={gid}>
+                                                            {gid.substring(0, 12)}...
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            <div style={styles.groupCopyBox}>
+                                                <code>{userData?.groupId}</code>
+                                                <button onClick={copyGroupId} style={styles.copyBtn}>
+                                                    {copied ? <Check size={16} color="var(--success)" /> : <Copy size={16} />}
+                                                </button>
+                                            </div>
+                                            <p style={styles.groupHint}>Share this ID to invite partners</p>
+                                            <button
+                                                onClick={() => {
+                                                    setShowGroupInfo(false);
+                                                    navigate('/groups');
+                                                }}
+                                                style={styles.manageGroupsBtn}
+                                                className="glass"
+                                            >
+                                                <Plus size={14} />
+                                                <span>Join or Create Another Group</span>
+                                            </button>
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
                         <button onClick={logout} style={styles.headerBtn} className="glass">
                             <LogOut size={20} />
                         </button>
                     </div>
                 </div>
 
-                <AnimatePresence>
-                    {showGroupInfo && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="glass"
-                            style={styles.groupCard}
+                <div style={styles.headerMain}>
+                    <div style={styles.greetingSection}>
+                        <motion.h2
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.5 }}
+                            style={styles.greetingLight}
                         >
-                            <div style={styles.groupInfoTitle}>
-                                <Users size={16} color="var(--primary)" />
-                                <span>Group Management</span>
-                            </div>
-                            <div style={styles.groupCopyBox}>
-                                <code>{userData?.groupId}</code>
-                                <button onClick={copyGroupId} style={styles.copyBtn}>
-                                    {copied ? <Check size={16} color="var(--success)" /> : <Copy size={16} />}
-                                </button>
-                            </div>
-                            <p style={styles.groupHint}>Share this ID to invite partners</p>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            Hey,
+                        </motion.h2>
+                        <motion.h2
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.5, delay: 0.1 }}
+                            style={styles.greetingBold}
+                        >
+                            {userData?.displayName?.split(' ')[0]} 👋
+                        </motion.h2>
+                    </div>
+                </div>
             </header>
 
             <main style={styles.main}>
@@ -200,10 +254,14 @@ const styles = {
         paddingBottom: '100px',
     },
     header: {
+        marginBottom: '3rem',
+    },
+    headerTop: {
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: '3rem',
+        alignItems: 'center',
+        width: '100%',
+        gap: '1.5rem',
     },
     logo: {
         fontSize: '1.5rem',
@@ -211,15 +269,50 @@ const styles = {
         letterSpacing: '-0.02em',
         color: 'var(--primary)',
     },
-    userName: {
-        fontSize: '2rem',
-        fontWeight: '700',
-        marginTop: '0.5rem',
+    brand: {
+        display: 'flex',
+        flexDirection: 'column',
+    },
+    headerMain: {
+        marginTop: '2.5rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        width: '100%',
+    },
+    greetingSection: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.2rem',
+    },
+    greetingLight: {
+        fontSize: '2.5rem',
+        fontWeight: '300',
+        color: 'var(--text-muted)',
+        lineHeight: '1.1',
+    },
+    greetingBold: {
+        fontSize: '3.5rem',
+        fontWeight: '800',
+        color: 'var(--text-main)',
+        lineHeight: '1.1',
+        letterSpacing: '-0.03em',
     },
     headerActions: {
         display: 'flex',
-        gap: '1rem',
+        gap: '0.8rem',
         alignItems: 'center',
+    },
+    headerBtn: {
+        width: '40px',
+        height: '40px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 'var(--radius-md)',
+        color: 'var(--text-main)',
+        border: '1px solid var(--glass-border)',
+        cursor: 'pointer',
     },
     groupBadge: {
         padding: '0.6rem 1rem',
@@ -242,6 +335,79 @@ const styles = {
         borderRadius: 'var(--radius-md)',
         background: 'var(--glass)',
         border: '1px solid var(--glass-border)',
+    },
+    groupCard: {
+        position: 'absolute',
+        top: 'calc(100% + 12px)',
+        right: 0,
+        zIndex: 100,
+        padding: '1.2rem',
+        width: '280px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.8rem',
+        boxShadow: '0 20px 40px -10px rgba(0,0,0,0.5)',
+        transformOrigin: 'top right',
+    },
+    groupInfoTitle: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.6rem',
+        fontSize: '0.8rem',
+        fontWeight: '700',
+        color: 'var(--text-main)',
+        marginBottom: '0.2rem',
+    },
+    groupCopyBox: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        background: 'rgba(255, 255, 255, 0.05)',
+        padding: '0.6rem 0.8rem',
+        borderRadius: 'var(--radius-sm)',
+        border: '1px solid var(--glass-border)',
+    },
+    copyBtn: {
+        color: 'var(--text-muted)',
+        display: 'flex',
+        alignItems: 'center',
+    },
+    groupHint: {
+        fontSize: '0.7rem',
+        color: 'var(--text-muted)',
+    },
+    manageGroupsBtn: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '0.4rem',
+        padding: '0.6rem',
+        borderRadius: 'var(--radius-sm)',
+        fontSize: '0.75rem',
+        fontWeight: '600',
+        color: 'var(--primary)',
+        marginTop: '0.4rem',
+        border: '1px solid var(--glass-border)',
+        cursor: 'pointer',
+    },
+    groupSwitcherContainer: {
+        display: 'flex',
+        alignItems: 'center',
+        marginRight: '1rem',
+    },
+    groupSwitcher: {
+        width: '100%',
+        background: 'rgba(255, 255, 255, 0.05)',
+        border: '1px solid var(--glass-border)',
+        color: 'var(--text-main)',
+        padding: '0.8rem 1rem',
+        borderRadius: 'var(--radius-sm)',
+        fontSize: '0.9rem',
+        fontWeight: '500',
+        outline: 'none',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        marginTop: '0.4rem',
     },
     main: {
         display: 'flex',
@@ -326,8 +492,30 @@ const styles = {
             padding: 'var(--spacing-md)',
         },
         header: {
+            marginBottom: '2rem',
+        },
+        headerTop: {
             flexDirection: 'column',
-            gap: '1rem',
+            alignItems: 'flex-start',
+            gap: '1.5rem',
+        },
+        headerActions: {
+            width: '100%',
+            justifyContent: 'space-between',
+        },
+        userName: {
+            fontSize: '1.5rem',
+        },
+        headerMain: {
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: '2rem',
+        },
+        greetingLight: {
+            fontSize: '1.8rem',
+        },
+        greetingBold: {
+            fontSize: '2.5rem',
         },
         grid: {
             gridTemplateColumns: '1fr',

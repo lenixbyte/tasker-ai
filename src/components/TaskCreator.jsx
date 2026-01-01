@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Tag as TagIcon, ChevronDown, Briefcase, Home, GraduationCap, Heart, Zap, Coffee } from 'lucide-react';
 import { useTasks } from '../contexts/TaskContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useEffect } from 'react';
 
 const PREDEFINED_LABELS = [
     { name: 'Work', icon: Briefcase, color: '#3b82f6' },
@@ -13,13 +15,22 @@ const PREDEFINED_LABELS = [
 ];
 
 export default function TaskCreator({ isOpen, onClose }) {
-    const { createTask, bulkCreateTasks } = useTasks();
+    const { userData } = useAuth();
+    const { createTask, bulkCreateTasks, fetchGroupMembers } = useTasks();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState(1);
     const [selectedLabels, setSelectedLabels] = useState([]);
     const [customLabel, setCustomLabel] = useState('');
+    const [assignee, setAssignee] = useState(null);
+    const [groupMembers, setGroupMembers] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && userData?.groupId) {
+            fetchGroupMembers(userData.groupId).then(setGroupMembers);
+        }
+    }, [isOpen, userData?.groupId]);
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -35,6 +46,7 @@ export default function TaskCreator({ isOpen, onClose }) {
                 description,
                 priority: parseInt(priority),
                 labels: finalLabels,
+                assignedTo: assignee
             });
             resetForm();
             onClose();
@@ -51,6 +63,7 @@ export default function TaskCreator({ isOpen, onClose }) {
         setPriority(1);
         setSelectedLabels([]);
         setCustomLabel('');
+        setAssignee(null);
     };
 
     const toggleLabel = (labelName) => {
@@ -140,6 +153,33 @@ export default function TaskCreator({ isOpen, onClose }) {
                                     value={customLabel}
                                     onChange={e => setCustomLabel(e.target.value)}
                                 />
+                            </div>
+
+                            <div style={styles.inputGroup}>
+                                <label style={styles.label}>Assign To</label>
+                                <select
+                                    style={styles.input}
+                                    value={assignee?.uid || ''}
+                                    onChange={(e) => {
+                                        const member = groupMembers.find(m => m.uid === e.target.value);
+                                        setAssignee(member ? {
+                                            uid: member.uid,
+                                            displayName: member.displayName,
+                                            photoURL: member.photoURL
+                                        } : null);
+                                    }}
+                                >
+                                    <option value="">Unassigned</option>
+                                    {groupMembers.length > 0 ? (
+                                        groupMembers.map(member => (
+                                            <option key={member.uid} value={member.uid}>
+                                                {member.displayName || 'Unnamed Partner'} {member.uid === userData.uid ? '(Me)' : ''}
+                                            </option>
+                                        ))
+                                    ) : (
+                                        <option disabled>Loading members...</option>
+                                    )}
+                                </select>
                             </div>
 
                             <div style={styles.divider}>

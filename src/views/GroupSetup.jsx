@@ -10,10 +10,12 @@ import {
     arrayUnion
 } from 'firebase/firestore';
 import { motion } from 'framer-motion';
-import { Users, Plus, UserCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Plus, UserCheck, ArrowLeft } from 'lucide-react';
 
 export default function GroupSetup() {
-    const { currentUser, setUserData } = useAuth();
+    const { currentUser, userData, setUserData, switchGroup } = useAuth();
+    const navigate = useNavigate();
     const [groupId, setGroupId] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -27,10 +29,15 @@ export default function GroupSetup() {
             });
 
             await updateDoc(doc(db, 'users', currentUser.uid), {
-                groupId: groupRef.id
+                groupId: groupRef.id,
+                joinedGroups: arrayUnion(groupRef.id)
             });
 
-            setUserData(prev => ({ ...prev, groupId: groupRef.id }));
+            setUserData(prev => ({
+                ...prev,
+                groupId: groupRef.id,
+                joinedGroups: [...(prev.joinedGroups || []), groupRef.id]
+            }));
         } catch (err) {
             setError('Failed to create group: ' + err.message);
         } finally {
@@ -52,10 +59,17 @@ export default function GroupSetup() {
                 });
 
                 await updateDoc(doc(db, 'users', currentUser.uid), {
-                    groupId: groupId
+                    groupId: groupId,
+                    joinedGroups: arrayUnion(groupId)
                 });
 
-                setUserData(prev => ({ ...prev, groupId: groupId }));
+                setUserData(prev => ({
+                    ...prev,
+                    groupId: groupId,
+                    joinedGroups: prev.joinedGroups?.includes(groupId)
+                        ? prev.joinedGroups
+                        : [...(prev.joinedGroups || []), groupId]
+                }));
             } else {
                 setError('Group not found');
             }
@@ -74,6 +88,15 @@ export default function GroupSetup() {
                 className="glass"
                 style={styles.card}
             >
+                {userData?.groupId && (
+                    <button
+                        onClick={() => navigate('/')}
+                        style={styles.backBtn}
+                    >
+                        <ArrowLeft size={16} />
+                        <span>Back</span>
+                    </button>
+                )}
                 <Users size={48} color="var(--primary)" style={{ marginBottom: '1rem' }} />
                 <h1>Group Setup</h1>
                 <p style={styles.subtitle}>Tasks are shared within a group. Start by creating or joining one.</p>
@@ -105,6 +128,37 @@ export default function GroupSetup() {
                     </form>
                 </div>
 
+                {userData?.joinedGroups?.length > 0 && (
+                    <div style={styles.joinedGroupsSection}>
+                        <div style={styles.divider}>
+                            <span style={styles.dividerLine}></span>
+                            <span style={styles.dividerText}>YOUR GROUPS</span>
+                            <span style={styles.dividerLine}></span>
+                        </div>
+                        <div style={styles.groupList}>
+                            {userData.joinedGroups.map(gid => (
+                                <div
+                                    key={gid}
+                                    style={{
+                                        ...styles.groupItem,
+                                        borderColor: gid === userData.groupId ? 'var(--primary)' : 'var(--glass-border)',
+                                        background: gid === userData.groupId ? 'rgba(59, 130, 246, 0.05)' : 'rgba(255, 255, 255, 0.02)'
+                                    }}
+                                    onClick={() => switchGroup(gid)}
+                                >
+                                    <div style={styles.groupItemInfo}>
+                                        <Users size={16} color={gid === userData.groupId ? 'var(--primary)' : 'var(--text-muted)'} />
+                                        <span style={{ color: gid === userData.groupId ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                                            {gid.substring(0, 12)}...
+                                        </span>
+                                    </div>
+                                    {gid === userData.groupId && <div style={styles.activeIndicator} />}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {error && <p style={styles.error}>{error}</p>}
             </motion.div>
         </div>
@@ -124,6 +178,20 @@ const styles = {
         maxWidth: '500px',
         padding: 'var(--spacing-lg)',
         textAlign: 'center',
+        position: 'relative',
+    },
+    backBtn: {
+        position: 'absolute',
+        top: '1rem',
+        left: '1rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.4rem',
+        fontSize: '0.8rem',
+        color: 'var(--text-muted)',
+        background: 'transparent',
+        border: 'none',
+        cursor: 'pointer',
     },
     subtitle: {
         color: 'var(--text-muted)',
@@ -181,5 +249,38 @@ const styles = {
         color: 'var(--danger)',
         marginTop: '1rem',
         fontSize: '0.9rem',
+    },
+    joinedGroupsSection: {
+        marginTop: '2rem',
+        width: '100%',
+        textAlign: 'left',
+    },
+    groupList: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.8rem',
+        marginTop: '1rem',
+    },
+    groupItem: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '1rem',
+        borderRadius: 'var(--radius-md)',
+        border: '1px solid',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+    },
+    groupItemInfo: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.8rem',
+    },
+    activeIndicator: {
+        width: '8px',
+        height: '8px',
+        borderRadius: '50%',
+        background: 'var(--primary)',
+        boxShadow: '0 0 10px var(--primary)',
     }
 };
